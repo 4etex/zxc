@@ -410,6 +410,33 @@ class EkosystemaAPITester:
             error_msg = f"Separate video generation test failed: {str(e)}"
             logger.error(f"❌ {error_msg}")
             return {"status": "error", "message": error_msg}
+
+    async def test_dashboard_stats(self) -> Dict:
+        """Test dashboard statistics endpoint"""
+        logger.info("🔍 Testing dashboard statistics endpoint...")
+        
+        try:
+            async with self.session.get(f"{self.api_url}/stats/dashboard") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    logger.info(f"✅ Dashboard Stats: {data.get('totals', {})}")
+                    
+                    # Validate response structure
+                    required_fields = ["totals", "platform_stats", "last_updated"]
+                    missing_fields = [field for field in required_fields if field not in data]
+                    if missing_fields:
+                        return {"status": "error", "message": f"Missing fields: {missing_fields}"}
+                    
+                    return {"status": "success", "data": data}
+                else:
+                    error_text = await response.text()
+                    error_msg = f"Dashboard stats returned status {response.status}: {error_text}"
+                    logger.error(f"❌ {error_msg}")
+                    return {"status": "error", "message": error_msg}
+        except Exception as e:
+            error_msg = f"Dashboard stats test failed: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"status": "error", "message": error_msg}
         """Test dashboard statistics endpoint"""
         logger.info("🔍 Testing dashboard statistics endpoint...")
         

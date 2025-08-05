@@ -107,63 +107,78 @@ user_problem_statement: "EKOSYSTEMA_FULL - локальная система а�
 backend:
   - task: "Trend Collection API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main"
         comment: "API endpoint /api/trends реализован с интеграцией TrendCollector модуля"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - API успешно собирает тренды из YouTube RSS, Reddit и YouTube API. Найдено 30 трендов за 2 секунды. Исправлена проблема с сериализацией MongoDB ObjectId."
   
   - task: "Content Generation API"  
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main" 
         comment: "API endpoint /api/content/generate реализован с Gemini интеграцией"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - API успешно генерирует контент через Gemini 1.5-flash. Создано 4 единицы контента за 15 секунд. Исправлена проблема с emergentintegrations, заменено на прямое использование google-generativeai."
 
   - task: "Telegram Publishing API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"  
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main"
         comment: "API endpoint /api/publish/telegram реализован с Telegram Bot интеграцией"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - API успешно принимает запросы на публикацию и запускает фоновые задачи. Работает в demo режиме (бот не добавлен в каналы). Возвращает корректный ответ о запуске публикации."
 
   - task: "Full Automation API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0  
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main"
         comment: "API endpoint /api/automation/run реализован для полного цикла автоматизации"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - API успешно запускает полный цикл автоматизации в фоновом режиме. Возвращает корректную информацию о запущенных этапах и времени выполнения."
 
   - task: "Dashboard Statistics API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true  
+    needs_retesting: false  
     status_history:
       - working: false
         agent: "main"
         comment: "API endpoint /api/stats/dashboard реализован для статистики"
+      - working: true
+        agent: "testing"
+        comment: "✅ PASSED - API успешно возвращает статистику: 150 трендов, 6 контентов, 3 публикации. Исправлена проблема с сериализацией MongoDB ObjectId в recent_trends."
 
 frontend:
   - task: "EKOSYSTEMA Dashboard UI"

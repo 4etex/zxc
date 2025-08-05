@@ -59,6 +59,7 @@ class ContentGenerationRequest(BaseModel):
     platforms: List[str] = ["telegram", "youtube_shorts", "tiktok"]
     generate_videos: bool = False  # Новый параметр для генерации видео
     with_voice: bool = True  # Добавлять ли озвучку
+    monetize: bool = True  # Добавлять ли партнерские ссылки
 
 class ContentResponse(BaseModel):
     content: Dict[str, List[Dict]]

@@ -137,13 +137,16 @@ async def get_trends():
 @api_router.post("/content/generate", response_model=ContentResponse)
 async def generate_content(request: ContentGenerationRequest):
     """Генерация контента на основе трендов"""
-    global content_generator, video_generator
+    global content_generator, video_generator, monetization_manager
     
     if not content_generator:
         content_generator = ContentGenerator(gemini_api_key=GEMINI_API_KEY)
     
     if request.generate_videos and not video_generator:
         video_generator = EnhancedVideoGenerator()
+        
+    if request.monetize and not monetization_manager:
+        monetization_manager = MonetizationManager()
     
     try:
         # Получаем тренды из БД по ID
@@ -159,10 +162,18 @@ async def generate_content(request: ContentGenerationRequest):
         # Генерируем контент
         content_batch = await content_generator.generate_batch_content(trends_data, request.platforms)
         
+        # Добавляем монетизацию если запрошено
+        if request.monetize and monetization_manager:
+            try:
+                content_batch = await monetization_manager.optimize_content_monetization(content_batch)
+                logger.info("Добавлена монетизация к контенту")
+            except Exception as e:
+                logger.error(f"Ошибка добавления монетизации: {e}")
+        
         # Сохраняем сгенерированный контент в БД
         all_content = []
         for platform, content_items in content_batch.items():
-            content_data = [item.dict() for item in content_items]
+            content_data = [item.dict() if hasattr(item, 'dict') else item for item in content_items]
             if content_data:
                 await db.content.insert_many(content_data)
                 all_content.extend(content_data)
@@ -176,8 +187,9 @@ async def generate_content(request: ContentGenerationRequest):
                     if platform in ["youtube_shorts", "tiktok", "instagram"]:  # Только для видео платформ
                         platform_videos = []
                         for content_item in content_items:
+                            content_dict = content_item.dict() if hasattr(content_item, 'dict') else content_item
                             video = await video_generator.create_full_video(
-                                content_item.dict(), 
+                                content_dict, 
                                 platform, 
                                 with_voice=request.with_voice
                             )
@@ -197,7 +209,10 @@ async def generate_content(request: ContentGenerationRequest):
         # Форматируем ответ
         formatted_content = {}
         for platform, content_items in content_batch.items():
-            formatted_content[platform] = [item.dict() for item in content_items]
+            formatted_content[platform] = [
+                item.dict() if hasattr(item, 'dict') else item 
+                for item in content_items
+            ]
         
         return ContentResponse(
             content=formatted_content,

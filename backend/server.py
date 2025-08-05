@@ -17,6 +17,7 @@ sys.path.append('/app')
 from modules.trend_collector import TrendCollector, TrendItem
 from modules.content_generator import ContentGenerator, ContentItem  
 from modules.telegram_publisher import TelegramPublisher, TelegramPost
+from modules.enhanced_video_generator import EnhancedVideoGenerator
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

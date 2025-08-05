@@ -218,7 +218,10 @@ async def generate_content(request: ContentGenerationRequest):
                             )
                             # Сохраняем информацию о видео в БД
                             video_data = video.to_dict()
-                            await db.videos.insert_one(video_data)
+                            await db.videos.insert_one(video_data.copy())  # Save a copy to DB
+                            # Remove MongoDB _id field if it exists for API response
+                            if '_id' in video_data:
+                                del video_data['_id']
                             platform_videos.append(video_data)
                         
                         if platform_videos:

@@ -397,10 +397,16 @@ function App() {
 
   const runFullAutomation = async () => {
     try {
-      const response = await axios.get(`${API}/automation/run`);
+      const response = await axios.post(`${API}/automation/full-cycle`, {}, {
+        params: {
+          generate_videos: true,
+          monetize: true,
+          with_voice: true
+        }
+      });
       alert(`🚀 ${response.data.message}\n\nЭтапы: ${response.data.steps.join(' → ')}\n\nВремя выполнения: ${response.data.estimated_time}`);
       // Обновляем статистику через некоторое время
-      setTimeout(loadDashboardStats, 10000); // Обновляем через 10 секунд
+      setTimeout(loadDashboardStats, 15000); // Обновляем через 15 секунд
     } catch (error) {
       console.error("Ошибка запуска автоматизации:", error);
       alert("Ошибка запуска автоматизации");

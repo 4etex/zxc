@@ -219,7 +219,13 @@ async def get_dashboard_stats():
         publications_count = await db.publications.count_documents({})
         
         # Последние тренды
-        recent_trends = await db.trends.find().sort("timestamp", -1).limit(5).to_list(5)
+        recent_trends_cursor = await db.trends.find().sort("timestamp", -1).limit(5).to_list(5)
+        recent_trends = []
+        for trend in recent_trends_cursor:
+            # Convert ObjectId to string and remove MongoDB _id field
+            if '_id' in trend:
+                del trend['_id']
+            recent_trends.append(trend)
         
         # Статистика по платформам
         platform_stats = {}

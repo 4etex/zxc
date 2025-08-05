@@ -90,11 +90,12 @@ const TrendsManager = ({ onTrendsUpdate, onSelectedTrendsUpdate }) => {
   };
 
   const toggleTrendSelection = (trendId) => {
-    setSelectedTrends(prev => 
-      prev.includes(trendId) 
-        ? prev.filter(id => id !== trendId)
-        : [...prev, trendId]
-    );
+    const newSelectedTrends = selectedTrends.includes(trendId) 
+      ? selectedTrends.filter(id => id !== trendId)
+      : [...selectedTrends, trendId];
+    
+    setSelectedTrends(newSelectedTrends);
+    onSelectedTrendsUpdate(newSelectedTrends);
   };
 
   return (

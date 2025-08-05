@@ -70,7 +70,7 @@ const DashboardStats = ({ stats, onRefresh }) => {
 };
 
 // Компонент управления трендами
-const TrendsManager = ({ onTrendsUpdate }) => {
+const TrendsManager = ({ onTrendsUpdate, onSelectedTrendsUpdate }) => {
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTrends, setSelectedTrends] = useState([]);

@@ -385,7 +385,10 @@ function App() {
         <DashboardStats stats={stats} onRefresh={loadDashboardStats} />
 
         {/* Управление трендами */}
-        <TrendsManager onTrendsUpdate={(newTrends) => setTrends(newTrends)} />
+        <TrendsManager 
+          onTrendsUpdate={(newTrends) => setTrends(newTrends)} 
+          onSelectedTrendsUpdate={(selected) => setSelectedTrends(selected)}
+        />
 
         {/* Генерация контента */}
         <ContentGenerator selectedTrends={selectedTrends} />

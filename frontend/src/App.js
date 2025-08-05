@@ -201,13 +201,13 @@ const ContentGenerator = ({ selectedTrends, onContentGenerated }) => {
   };
 
   const publishToTelegram = async () => {
-    if (!content || !content.telegram) {
+    if (!content || !content.content || !content.content.telegram) {
       alert("Нет контента для публикации");
       return;
     }
 
     try {
-      const contentIds = content.telegram.map(item => item.id);
+      const contentIds = content.content.telegram.map(item => item.id);
       const response = await axios.post(`${API}/publish/telegram`, {
         content_ids: contentIds,
         channel_key: "main",

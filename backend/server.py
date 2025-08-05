@@ -67,6 +67,29 @@ class ContentResponse(BaseModel):
     total_items: int
     timestamp: str
 
+# Добавляем новые endpoints для расширенной функциональности
+
+class VideoGenerationRequest(BaseModel):
+    content_ids: List[str]
+    platforms: List[str] = ["youtube_shorts", "tiktok", "instagram"]
+    with_voice: bool = True
+    voice_language: str = "ru"
+
+class VideoResponse(BaseModel):
+    videos: Dict[str, List[Dict]]
+    total_videos: int
+    timestamp: str
+
+class MonetizationRequest(BaseModel):
+    content_ids: List[str]
+    max_links_per_content: int = 2
+
+class MonetizationResponse(BaseModel):
+    optimized_content: Dict[str, List[Dict]]
+    total_links_added: int
+    earnings_potential: float
+    timestamp: str
+
 class PublishRequest(BaseModel):
     content_ids: List[str]
     channel_key: str = "main"

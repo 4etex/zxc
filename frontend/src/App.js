@@ -247,6 +247,42 @@ const ContentGenerator = ({ selectedTrends, onContentGenerated }) => {
         </div>
       </div>
 
+      <div className="mb-6">
+        <h3 className="font-semibold mb-3">🎬 Дополнительные возможности:</h3>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={generateVideos}
+              onChange={(e) => setGenerateVideos(e.target.checked)}
+              className="rounded"
+            />
+            <span>Генерировать видео</span>
+          </label>
+          
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={withVoice}
+              onChange={(e) => setWithVoice(e.target.checked)}
+              disabled={!generateVideos}
+              className="rounded"
+            />
+            <span className={generateVideos ? "" : "text-gray-400"}>Добавить озвучку</span>
+          </label>
+          
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={monetize}
+              onChange={(e) => setMonetize(e.target.checked)}
+              className="rounded"
+            />
+            <span>Добавить монетизацию</span>
+          </label>
+        </div>
+      </div>
+
       <div className="flex gap-4 mb-6">
         <button
           onClick={generateContent}

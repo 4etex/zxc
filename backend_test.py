@@ -115,8 +115,9 @@ class EkosystemaAPITester:
             return {"status": "error", "message": error_msg}
 
     async def test_content_generation(self, trend_ids: List[str]) -> Dict:
-        """Test content generation endpoint"""
+        """Test content generation endpoint - FOCUS ON GIFTS IN TELEGRAM"""
         logger.info("🔍 Testing content generation endpoint...")
+        logger.info("🎁 SPECIAL TEST: Checking if content is about GIFTS IN TELEGRAM")
         logger.info("⏳ This may take 30-60 seconds due to LLM processing...")
         
         if not trend_ids:
@@ -125,7 +126,9 @@ class EkosystemaAPITester:
         try:
             payload = {
                 "trend_ids": trend_ids[:2],  # Use first 2 trends to save time
-                "platforms": ["telegram", "youtube_shorts"]
+                "platforms": ["telegram", "youtube_shorts"],
+                "generate_videos": False,  # Test without videos first
+                "monetize": True
             }
             
             async with self.session.post(
@@ -143,15 +146,41 @@ class EkosystemaAPITester:
                     if missing_fields:
                         return {"status": "error", "message": f"Missing fields: {missing_fields}"}
                     
+                    # CRITICAL CHECK: Verify content is about gifts in Telegram
+                    content = data.get("content", {})
+                    telegram_content = content.get("telegram", [])
+                    
+                    gift_related_content = 0
+                    for item in telegram_content:
+                        text_content = item.get("text", "").lower()
+                        title_content = item.get("title", "").lower()
+                        
+                        # Check for gift-related keywords
+                        gift_keywords = ["подарок", "подарки", "gift", "gifts", "телеграм", "telegram", "бот", "bot"]
+                        if any(keyword in text_content or keyword in title_content for keyword in gift_keywords):
+                            gift_related_content += 1
+                            logger.info(f"🎁 Found gift-related content: {item.get('title', 'No title')}")
+                    
+                    if gift_related_content == 0:
+                        logger.warning("⚠️ WARNING: No content appears to be about gifts in Telegram!")
+                        logger.warning("This matches user complaint about content not being about gifts in Telegram")
+                    else:
+                        logger.info(f"✅ Found {gift_related_content} gift-related content items")
+                    
                     # Extract content IDs for publishing test
                     content_ids = []
-                    content = data.get("content", {})
                     for platform, items in content.items():
                         for item in items:
                             if item.get("id"):
                                 content_ids.append(item["id"])
                     
-                    return {"status": "success", "data": data, "content_ids": content_ids}
+                    return {
+                        "status": "success", 
+                        "data": data, 
+                        "content_ids": content_ids,
+                        "gift_related_count": gift_related_content,
+                        "total_telegram_content": len(telegram_content)
+                    }
                 else:
                     error_text = await response.text()
                     error_msg = f"Content generation returned status {response.status}: {error_text}"

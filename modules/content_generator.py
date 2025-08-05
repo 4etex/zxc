@@ -13,7 +13,7 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Optional
 from pydantic import BaseModel
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 from .trend_collector import TrendItem
 
 
@@ -33,6 +33,10 @@ class ContentGenerator:
     def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
         self.logger = logging.getLogger(__name__)
+        
+        # Configure Gemini
+        genai.configure(api_key=gemini_api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
         
         # Промпты для различных платформ
         self.prompts = {
@@ -96,13 +100,6 @@ URL: {url}
     async def generate_content_for_trend(self, trend: TrendItem, platform: str) -> ContentItem:
         """Генерация контента для конкретного тренда и платформы"""
         try:
-            # Создаём новый чат для каждого контента
-            chat = LlmChat(
-                api_key=self.gemini_api_key,
-                session_id=f"content_gen_{uuid.uuid4()}",
-                system_message=f"Ты - эксперт по созданию вирусного контента для {platform}. Создаёшь только качественный, привлекательный контент."
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(4096)
-            
             # Формируем промпт для платформы
             prompt_template = self.prompts.get(platform, self.prompts["telegram"])
             prompt = prompt_template.format(
@@ -111,9 +108,9 @@ URL: {url}
                 url=trend.url
             )
             
-            # Генерируем контент
-            user_message = UserMessage(text=prompt)
-            generated_content = await chat.send_message(user_message)
+            # Генерируем контент через Gemini
+            response = await asyncio.to_thread(self.model.generate_content, prompt)
+            generated_content = response.text
             
             # Извлекаем хештеги из сгенерированного контента
             hashtags = self._extract_hashtags(generated_content, platform)

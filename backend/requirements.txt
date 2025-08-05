@@ -29,3 +29,5 @@ feedparser==6.0.10
 aiohttp==3.9.1
 google-api-python-client==2.88.0
 python-telegram-bot==20.7
+# Video generation dependencies
+Pillow>=10.0.0

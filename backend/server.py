@@ -40,6 +40,8 @@ trend_collector = None
 content_generator = None
 telegram_publisher = None
 video_generator = None
+youtube_publisher = None
+monetization_manager = None
 
 # Инициализация сервисов с API ключами
 GEMINI_API_KEY = "AIzaSyBSArxA7X_nUg-S41JketY3nLqR3VWGCTw"

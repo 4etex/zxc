@@ -283,15 +283,159 @@ async def publish_to_telegram(request: PublishRequest, background_tasks: Backgro
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка публикации: {str(e)}")
 
-@api_router.get("/automation/run")
-async def run_full_automation(background_tasks: BackgroundTasks):
-    """Запуск полного цикла автоматизации"""
-    background_tasks.add_task(full_automation_cycle)
+@api_router.post("/videos/generate", response_model=VideoResponse)
+async def generate_videos(request: VideoGenerationRequest):
+    """Генерация видео из существующего контента"""
+    global video_generator
+    
+    if not video_generator:
+        video_generator = EnhancedVideoGenerator()
+    
+    try:
+        # Получаем контент из БД
+        content_items = []
+        for content_id in request.content_ids:
+            content_doc = await db.content.find_one({"id": content_id})
+            if content_doc:
+                content_items.append(content_doc)
+        
+        if not content_items:
+            raise HTTPException(status_code=404, detail="Контент не найден")
+        
+        # Генерируем видео
+        all_videos = {}
+        total_videos = 0
+        
+        for platform in request.platforms:
+            platform_videos = []
+            
+            for content_item in content_items:
+                try:
+                    video = await video_generator.create_full_video(
+                        content_item,
+                        platform,
+                        with_voice=request.with_voice,
+                        voice_lang=request.voice_language
+                    )
+                    
+                    # Сохраняем в БД
+                    video_data = video.to_dict()
+                    await db.videos.insert_one(video_data)
+                    platform_videos.append(video_data)
+                    total_videos += 1
+                    
+                except Exception as e:
+                    logger.error(f"Ошибка создания видео для {platform}: {e}")
+            
+            if platform_videos:
+                all_videos[platform] = platform_videos
+        
+        return VideoResponse(
+            videos=all_videos,
+            total_videos=total_videos,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка генерации видео: {str(e)}")
+
+@api_router.post("/monetization/optimize", response_model=MonetizationResponse)
+async def optimize_monetization(request: MonetizationRequest):
+    """Оптимизация монетизации для существующего контента"""
+    global monetization_manager
+    
+    if not monetization_manager:
+        monetization_manager = MonetizationManager()
+    
+    try:
+        # Получаем контент из БД
+        content_items = []
+        for content_id in request.content_ids:
+            content_doc = await db.content.find_one({"id": content_id})
+            if content_doc:
+                content_items.append(content_doc)
+        
+        if not content_items:
+            raise HTTPException(status_code=404, detail="Контент не найден")
+        
+        # Группируем по платформам
+        content_by_platform = {}
+        for content in content_items:
+            platform = content.get("platform", "telegram")
+            if platform not in content_by_platform:
+                content_by_platform[platform] = []
+            content_by_platform[platform].append(content)
+        
+        # Оптимизируем монетизацию
+        optimized_content = await monetization_manager.optimize_content_monetization(
+            content_by_platform
+        )
+        
+        # Подсчитываем добавленные ссылки
+        total_links = 0
+        estimated_earnings = 0.0
+        
+        for platform, items in optimized_content.items():
+            for item in items:
+                if "affiliate_links" in item:
+                    total_links += len(item["affiliate_links"])
+                    for link in item["affiliate_links"]:
+                        estimated_earnings += link.get("commission_rate", 0) * 0.1
+        
+        # Сохраняем оптимизированный контент
+        for platform, items in optimized_content.items():
+            for item in items:
+                await db.content.update_one(
+                    {"id": item["id"]},
+                    {"$set": item}
+                )
+        
+        return MonetizationResponse(
+            optimized_content=optimized_content,
+            total_links_added=total_links,
+            earnings_potential=round(estimated_earnings, 2),
+            timestamp=datetime.utcnow().isoformat()
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка оптимизации монетизации: {str(e)}")
+
+@api_router.post("/automation/full-cycle")
+async def run_full_automation_cycle(background_tasks: BackgroundTasks,
+                                  generate_videos: bool = True,
+                                  monetize: bool = True,
+                                  with_voice: bool = True):
+    """Запуск полного цикла автоматизации с видео и монетизацией"""
+    
+    background_tasks.add_task(
+        full_automation_with_videos,
+        generate_videos,
+        monetize,
+        with_voice
+    )
+    
+    steps = [
+        "🔍 Сбор трендов",
+        "🤖 Генерация контента",
+    ]
+    
+    if monetize:
+        steps.append("💰 Добавление монетизации")
+    
+    if generate_videos:
+        steps.append("🎬 Создание видео с озвучкой")
+    
+    steps.append("📤 Публикация в Telegram")
     
     return {
-        "message": "Запущен полный цикл автоматизации",
-        "steps": ["Сбор трендов", "Генерация контента", "Публикация в Telegram"],
-        "estimated_time": "5-10 минут"
+        "message": "Запущен полный цикл автоматизации EKOSYSTEMA_FULL",
+        "steps": steps,
+        "estimated_time": "15-30 минут",
+        "features": {
+            "video_generation": generate_videos,
+            "monetization": monetize,
+            "voice_synthesis": with_voice
+        }
     }
 
 @api_router.get("/stats/dashboard")

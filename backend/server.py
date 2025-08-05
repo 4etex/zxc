@@ -626,7 +626,9 @@ async def full_automation_with_videos(generate_videos: bool = True, monetize: bo
                                     )
                                     # Сохраняем информацию о видео в БД
                                     video_data = video.to_dict()
-                                    await db.videos.insert_one(video_data)
+                                    # Create a copy for database insertion to avoid ObjectId contamination
+                                    db_video_data = video_data.copy()
+                                    await db.videos.insert_one(db_video_data)
                                     total_videos += 1
                                 except Exception as e:
                                     logging.error(f"❌ Ошибка создания видео для {platform}: {e}")

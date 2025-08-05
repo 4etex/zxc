@@ -323,7 +323,10 @@ async def generate_videos(request: VideoGenerationRequest):
                     
                     # Сохраняем в БД
                     video_data = video.to_dict()
-                    await db.videos.insert_one(video_data)
+                    # Create a copy for database insertion to avoid ObjectId contamination
+                    db_video_data = video_data.copy()
+                    await db.videos.insert_one(db_video_data)
+                    # Use original clean data for API response
                     platform_videos.append(video_data)
                     total_videos += 1
                     

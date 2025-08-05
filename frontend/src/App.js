@@ -183,9 +183,15 @@ const ContentGenerator = ({ selectedTrends, onContentGenerated }) => {
     try {
       const response = await axios.post(`${API}/content/generate`, {
         trend_ids: selectedTrends,
-        platforms: selectedPlatforms
+        platforms: selectedPlatforms,
+        generate_videos: generateVideos,
+        with_voice: withVoice,
+        monetize: monetize
       });
-      setContent(response.data.content);
+      setContent(response.data);
+      if (onContentGenerated) {
+        onContentGenerated(response.data);
+      }
     } catch (error) {
       console.error("Ошибка генерации контента:", error);
       alert("Ошибка при генерации контента");

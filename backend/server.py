@@ -104,10 +104,13 @@ async def get_trends():
     try:
         trends = await trend_collector.collect_all_trends()
         
-        # Сохраняем тренды в БД
+        # Подготавливаем данные для ответа (без MongoDB полей)
         trends_data = [trend.dict() for trend in trends]
+        
+        # Сохраняем тренды в БД (создаём копию для БД)
         if trends_data:
-            await db.trends.insert_many(trends_data)
+            db_trends_data = [trend.dict() for trend in trends]  # Создаём отдельную копию для БД
+            await db.trends.insert_many(db_trends_data)
         
         return TrendResponse(
             trends=trends_data,

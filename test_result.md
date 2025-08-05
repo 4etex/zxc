@@ -200,11 +200,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Trend Collection API"
-    - "Content Generation API" 
-    - "Telegram Publishing API"
-    - "Full Automation API"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

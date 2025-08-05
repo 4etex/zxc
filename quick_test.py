@@ -23,12 +23,13 @@ async def test_content_generation():
                 print(f"❌ Failed to get trends: {response.status}")
                 return
         
-        # Test basic content generation (no videos)
-        print("\n🔍 Testing basic content generation...")
+        # Test content generation WITH videos
+        print("\n🔍 Testing content generation WITH VIDEOS...")
         payload = {
-            "trend_ids": trend_ids,
-            "platforms": ["telegram"],
-            "generate_videos": False,
+            "trend_ids": trend_ids[:1],  # Use only 1 trend for video test
+            "platforms": ["telegram", "youtube_shorts"],
+            "generate_videos": True,
+            "with_voice": True,
             "monetize": False
         }
         
@@ -40,20 +41,20 @@ async def test_content_generation():
             print(f"Status: {response.status}")
             if response.status == 200:
                 data = await response.json()
-                print(f"✅ Content generation successful!")
+                print(f"✅ Content+Video generation successful!")
                 print(f"Total items: {data.get('total_items', 0)}")
                 
-                # Check content structure
-                content = data.get("content", {})
-                for platform, items in content.items():
-                    print(f"Platform {platform}: {len(items)} items")
-                    if items:
-                        first_item = items[0]
-                        print(f"  Sample item keys: {list(first_item.keys())}")
-                        print(f"  Sample title: {first_item.get('title', 'No title')[:100]}...")
+                # Check videos
+                videos = data.get("videos")
+                if videos:
+                    print(f"Videos created: {videos}")
+                    total_videos = sum(len(v) if isinstance(v, list) else 0 for v in videos.values())
+                    print(f"Total videos: {total_videos}")
+                else:
+                    print("❌ No videos in response")
             else:
                 error_text = await response.text()
-                print(f"❌ Content generation failed: {error_text}")
+                print(f"❌ Content+Video generation failed: {error_text}")
 
 if __name__ == "__main__":
     asyncio.run(test_content_generation())

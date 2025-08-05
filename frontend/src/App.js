@@ -391,7 +391,13 @@ function App() {
         />
 
         {/* Генерация контента */}
-        <ContentGenerator selectedTrends={selectedTrends} />
+        <ContentGenerator 
+          selectedTrends={selectedTrends}
+          onContentGenerated={(newContent) => {
+            console.log("Контент сгенерирован:", newContent);
+            // Здесь можно добавить логику обработки нового контента
+          }}
+        />
 
         {/* Футер */}
         <div className="text-center text-gray-500 mt-12">

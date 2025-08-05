@@ -164,11 +164,14 @@ const TrendsManager = ({ onTrendsUpdate, onSelectedTrendsUpdate }) => {
 };
 
 // Компонент генерации контента
-const ContentGenerator = ({ selectedTrends }) => {
+const ContentGenerator = ({ selectedTrends, onContentGenerated }) => {
   const [platforms] = useState(["telegram", "youtube_shorts", "tiktok"]);
   const [selectedPlatforms, setSelectedPlatforms] = useState(["telegram"]);
   const [generating, setGenerating] = useState(false);
   const [content, setContent] = useState(null);
+  const [generateVideos, setGenerateVideos] = useState(false);
+  const [withVoice, setWithVoice] = useState(true);
+  const [monetize, setMonetize] = useState(true);
 
   const generateContent = async () => {
     if (selectedTrends.length === 0) {

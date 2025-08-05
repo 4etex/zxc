@@ -596,9 +596,10 @@ class EkosystemaAPITester:
         return results
 
     def print_test_summary(self, results: Dict):
-        """Print a formatted test summary"""
+        """Print a formatted test summary with focus on user-reported issues"""
         logger.info(f"\n{'='*60}")
         logger.info("🎯 EKOSYSTEMA_FULL API TEST SUMMARY")
+        logger.info("🚨 FOCUS: User-reported issues with video generation and automation")
         logger.info(f"{'='*60}")
         
         logger.info(f"📊 Total Tests: {results['total_tests']}")
@@ -613,18 +614,55 @@ class EkosystemaAPITester:
         for test_name, status in results["test_summary"].items():
             logger.info(f"{test_name}: {status}")
         
-        # Show critical failures
-        critical_failures = []
-        for test_name, result in results["test_details"].items():
-            if result["status"] == "error" and test_name in ["API Root", "System Status", "Trends Collection"]:
-                critical_failures.append(f"{test_name}: {result.get('message', 'Unknown error')}")
-        
-        if critical_failures:
+        # Show critical issues that match user complaints
+        critical_issues = results.get("critical_issues", [])
+        if critical_issues:
             logger.info(f"\n{'='*60}")
-            logger.info("🚨 CRITICAL FAILURES")
+            logger.info("🚨 CRITICAL ISSUES (MATCHING USER COMPLAINTS)")
             logger.info(f"{'='*60}")
-            for failure in critical_failures:
-                logger.error(failure)
+            for issue in critical_issues:
+                logger.error(f"❌ {issue}")
+        
+        # Show specific analysis for user complaints
+        logger.info(f"\n{'='*60}")
+        logger.info("🔍 USER COMPLAINT ANALYSIS")
+        logger.info(f"{'='*60}")
+        
+        # Check video generation issues
+        video_tests = ["Content+Video Generation", "Separate Video Generation"]
+        video_issues = []
+        for test_name in video_tests:
+            if test_name in results["test_details"]:
+                result = results["test_details"][test_name]
+                if result["status"] == "error":
+                    video_issues.append(f"{test_name}: {result.get('message', 'Unknown error')}")
+        
+        if video_issues:
+            logger.error("🎬 VIDEO GENERATION ISSUES CONFIRMED:")
+            for issue in video_issues:
+                logger.error(f"   ❌ {issue}")
+        else:
+            logger.info("🎬 Video generation tests: PASSED")
+        
+        # Check automation issues
+        if "Full Automation" in results["test_details"]:
+            automation_result = results["test_details"]["Full Automation"]
+            if automation_result["status"] == "error":
+                logger.error(f"🤖 AUTOMATION ISSUES CONFIRMED: {automation_result.get('message', 'Unknown error')}")
+            else:
+                logger.info("🤖 Full automation test: PASSED")
+        
+        # Check content generation issues
+        if "Content Generation (Basic)" in results["test_details"]:
+            content_result = results["test_details"]["Content Generation (Basic)"]
+            if content_result["status"] == "success":
+                gift_count = content_result.get("gift_related_count", 0)
+                if gift_count == 0:
+                    logger.error("🎁 CONTENT ISSUE CONFIRMED: No gift-related content found in Telegram posts")
+                else:
+                    logger.info(f"🎁 Gift-related content: Found {gift_count} relevant posts")
+            else:
+                logger.error(f"🎁 CONTENT GENERATION FAILED: {content_result.get('message', 'Unknown error')}")
 
 
 async def main():

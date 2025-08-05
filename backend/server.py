@@ -87,13 +87,15 @@ async def root():
 @api_router.get("/status", response_model=SystemStatus)
 async def get_system_status():
     """Статус системы"""
-    global trend_collector, content_generator, telegram_publisher, video_generator
+    global trend_collector, content_generator, telegram_publisher, video_generator, youtube_publisher, monetization_manager
     
     services = {
         "trend_collector": "active" if trend_collector else "inactive",
         "content_generator": "active" if content_generator else "inactive", 
         "telegram_publisher": "active" if telegram_publisher else "inactive",
-        "video_generator": "active" if video_generator else "inactive"
+        "video_generator": "active" if video_generator else "inactive",
+        "youtube_publisher": "active" if youtube_publisher else "inactive",
+        "monetization": "active" if monetization_manager else "inactive"
     }
     
     return SystemStatus(

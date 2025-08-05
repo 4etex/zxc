@@ -53,6 +53,8 @@ class TrendResponse(BaseModel):
 class ContentGenerationRequest(BaseModel):
     trend_ids: List[str]
     platforms: List[str] = ["telegram", "youtube_shorts", "tiktok"]
+    generate_videos: bool = False  # Новый параметр для генерации видео
+    with_voice: bool = True  # Добавлять ли озвучку
 
 class ContentResponse(BaseModel):
     content: Dict[str, List[Dict]]

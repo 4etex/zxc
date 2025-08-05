@@ -36,7 +36,7 @@ class ContentGenerator:
         
         # Configure Gemini
         genai.configure(api_key=gemini_api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         
         # Промпты для различных платформ
         self.prompts = {

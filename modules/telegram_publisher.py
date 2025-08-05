@@ -131,6 +131,23 @@ class TelegramPublisher:
         
         self.logger.info(f"Опубликовано {len(published_posts)} постов в канал {channel_key}")
         return published_posts
+    
+    def _create_fallback_content_item(self, content_dict: dict):
+        """Создает ContentItem из словаря с fallback значениями"""
+        from .content_generator import ContentItem
+        
+        return ContentItem(
+            id=content_dict.get('id', str(uuid.uuid4())),
+            trend_id=content_dict.get('trend_id', 'unknown'),
+            platform=content_dict.get('platform', 'telegram'),
+            content_type=content_dict.get('content_type', 'text'),
+            title=content_dict.get('title', 'Без заголовка'),
+            content=content_dict.get('content', 'Без содержания'),
+            hashtags=content_dict.get('hashtags', []),
+            keywords=content_dict.get('keywords', []),
+            timestamp=datetime.utcnow(),
+            metadata=content_dict.get('metadata', {})
+        )
 
     def _format_message(self, content_item: ContentItem) -> str:
         """Форматирование сообщения для Telegram"""

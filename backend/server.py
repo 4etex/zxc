@@ -130,10 +130,13 @@ async def get_trends():
 @api_router.post("/content/generate", response_model=ContentResponse)
 async def generate_content(request: ContentGenerationRequest):
     """Генерация контента на основе трендов"""
-    global content_generator
+    global content_generator, video_generator
     
     if not content_generator:
         content_generator = ContentGenerator(gemini_api_key=GEMINI_API_KEY)
+    
+    if request.generate_videos and not video_generator:
+        video_generator = EnhancedVideoGenerator()
     
     try:
         # Получаем тренды из БД по ID
@@ -157,6 +160,33 @@ async def generate_content(request: ContentGenerationRequest):
                 await db.content.insert_many(content_data)
                 all_content.extend(content_data)
         
+        # Генерируем видео если запрошено
+        videos_info = None
+        if request.generate_videos and video_generator:
+            try:
+                videos_info = {}
+                for platform, content_items in content_batch.items():
+                    if platform in ["youtube_shorts", "tiktok", "instagram"]:  # Только для видео платформ
+                        platform_videos = []
+                        for content_item in content_items:
+                            video = await video_generator.create_full_video(
+                                content_item.dict(), 
+                                platform, 
+                                with_voice=request.with_voice
+                            )
+                            # Сохраняем информацию о видео в БД
+                            video_data = video.to_dict()
+                            await db.videos.insert_one(video_data)
+                            platform_videos.append(video_data)
+                        
+                        if platform_videos:
+                            videos_info[platform] = platform_videos
+                
+                logger.info(f"Создано {sum(len(v) for v in videos_info.values()) if videos_info else 0} видео")
+            except Exception as e:
+                logger.error(f"Ошибка генерации видео: {e}")
+                videos_info = {"error": f"Ошибка генерации видео: {str(e)}"}
+        
         # Форматируем ответ
         formatted_content = {}
         for platform, content_items in content_batch.items():
@@ -164,6 +194,7 @@ async def generate_content(request: ContentGenerationRequest):
         
         return ContentResponse(
             content=formatted_content,
+            videos=videos_info,
             total_items=len(all_content),
             timestamp=datetime.utcnow().isoformat()
         )

@@ -259,7 +259,129 @@ class EkosystemaAPITester:
             logger.error(f"❌ {error_msg}")
             return {"status": "error", "message": error_msg}
 
-    async def test_dashboard_stats(self) -> Dict:
+    async def test_video_generation_with_content(self, trend_ids: List[str]) -> Dict:
+        """Test content generation WITH video generation enabled"""
+        logger.info("🔍 Testing content generation WITH VIDEO GENERATION...")
+        logger.info("🎬 CRITICAL TEST: Checking if videos are actually created")
+        logger.info("⏳ This may take 2-3 minutes due to video processing...")
+        
+        if not trend_ids:
+            return {"status": "error", "message": "No trend IDs available for video generation"}
+        
+        try:
+            payload = {
+                "trend_ids": trend_ids[:1],  # Use only 1 trend for video test
+                "platforms": ["telegram", "youtube_shorts", "tiktok"],
+                "generate_videos": True,  # CRITICAL: Enable video generation
+                "with_voice": True,       # CRITICAL: Enable voice synthesis
+                "monetize": False         # Disable monetization for faster testing
+            }
+            
+            async with self.session.post(
+                f"{self.api_url}/content/generate",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    logger.info(f"✅ Content+Video Generation: Created {data.get('total_items', 0)} content items")
+                    
+                    # CRITICAL CHECK: Verify videos were created
+                    videos_info = data.get("videos")
+                    if videos_info is None:
+                        logger.error("❌ CRITICAL: No videos field in response!")
+                        return {"status": "error", "message": "Videos field missing from response - video generation failed"}
+                    
+                    if isinstance(videos_info, dict) and "error" in videos_info:
+                        logger.error(f"❌ CRITICAL: Video generation error: {videos_info['error']}")
+                        return {"status": "error", "message": f"Video generation failed: {videos_info['error']}"}
+                    
+                    total_videos = 0
+                    video_platforms = []
+                    
+                    if isinstance(videos_info, dict):
+                        for platform, platform_videos in videos_info.items():
+                            if isinstance(platform_videos, list):
+                                total_videos += len(platform_videos)
+                                video_platforms.append(f"{platform}({len(platform_videos)})")
+                                
+                                # Check if video files actually exist
+                                for video in platform_videos:
+                                    video_path = video.get("file_path")
+                                    if video_path:
+                                        logger.info(f"🎬 Video created: {video_path}")
+                                    else:
+                                        logger.warning(f"⚠️ Video missing file_path: {video}")
+                    
+                    if total_videos == 0:
+                        logger.error("❌ CRITICAL: No videos were created despite generate_videos=True!")
+                        logger.error("This matches user complaint about video generation not working")
+                        return {"status": "error", "message": "Video generation enabled but no videos created"}
+                    else:
+                        logger.info(f"✅ SUCCESS: Created {total_videos} videos across platforms: {', '.join(video_platforms)}")
+                    
+                    return {
+                        "status": "success", 
+                        "data": data,
+                        "videos_created": total_videos,
+                        "video_platforms": video_platforms
+                    }
+                else:
+                    error_text = await response.text()
+                    error_msg = f"Content+Video generation returned status {response.status}: {error_text}"
+                    logger.error(f"❌ {error_msg}")
+                    return {"status": "error", "message": error_msg}
+        except Exception as e:
+            error_msg = f"Content+Video generation test failed: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"status": "error", "message": error_msg}
+
+    async def test_separate_video_generation(self, content_ids: List[str]) -> Dict:
+        """Test separate video generation endpoint"""
+        logger.info("🔍 Testing separate video generation endpoint...")
+        logger.info("🎬 Testing /api/videos/generate endpoint specifically")
+        
+        if not content_ids:
+            return {"status": "error", "message": "No content IDs available for video generation"}
+        
+        try:
+            payload = {
+                "content_ids": content_ids[:1],  # Use only 1 content item
+                "platforms": ["youtube_shorts", "tiktok"],
+                "with_voice": True,
+                "voice_language": "ru"
+            }
+            
+            async with self.session.post(
+                f"{self.api_url}/videos/generate",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    total_videos = data.get("total_videos", 0)
+                    logger.info(f"✅ Separate Video Generation: Created {total_videos} videos")
+                    
+                    # Validate response structure
+                    required_fields = ["videos", "total_videos", "timestamp"]
+                    missing_fields = [field for field in required_fields if field not in data]
+                    if missing_fields:
+                        return {"status": "error", "message": f"Missing fields: {missing_fields}"}
+                    
+                    if total_videos == 0:
+                        logger.error("❌ CRITICAL: Separate video generation created 0 videos!")
+                        return {"status": "error", "message": "Separate video generation failed - no videos created"}
+                    
+                    return {"status": "success", "data": data}
+                else:
+                    error_text = await response.text()
+                    error_msg = f"Separate video generation returned status {response.status}: {error_text}"
+                    logger.error(f"❌ {error_msg}")
+                    return {"status": "error", "message": error_msg}
+        except Exception as e:
+            error_msg = f"Separate video generation test failed: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return {"status": "error", "message": error_msg}
         """Test dashboard statistics endpoint"""
         logger.info("🔍 Testing dashboard statistics endpoint...")
         

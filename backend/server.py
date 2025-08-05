@@ -264,7 +264,10 @@ async def publish_to_telegram(request: PublishRequest, background_tasks: Backgro
         for content_id in request.content_ids:
             content_doc = await db.content.find_one({"id": content_id, "platform": "telegram"})
             if content_doc:
-                content_items.append(ContentItem(**content_doc))
+                # Удаляем MongoDB поля для чистоты данных
+                if '_id' in content_doc:
+                    del content_doc['_id']
+                content_items.append(content_doc)
         
         if not content_items:
             raise HTTPException(status_code=404, detail="Контент для публикации не найден")
@@ -272,7 +275,7 @@ async def publish_to_telegram(request: PublishRequest, background_tasks: Backgro
         # Запускаем публикацию в фоне
         background_tasks.add_task(
             publish_content_background,
-            content_items,
+            content_items,  # Передаем как список словарей
             request.channel_key,
             request.delay_seconds
         )

@@ -232,21 +232,49 @@ class EkosystemaAPITester:
             return {"status": "error", "message": error_msg}
 
     async def test_full_automation(self) -> Dict:
-        """Test full automation endpoint"""
+        """Test full automation endpoint - NEW FULL-CYCLE VERSION"""
         logger.info("🔍 Testing full automation endpoint...")
+        logger.info("🤖 CRITICAL TEST: Testing /api/automation/full-cycle with video generation")
         logger.info("⏳ This starts a background process that may take several minutes...")
         
         try:
-            async with self.session.get(f"{self.api_url}/automation/run") as response:
+            # Test the new full-cycle endpoint with video generation
+            params = {
+                "generate_videos": "true",
+                "monetize": "true", 
+                "with_voice": "true"
+            }
+            
+            async with self.session.post(
+                f"{self.api_url}/automation/full-cycle",
+                params=params
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
                     logger.info(f"✅ Full Automation: {data.get('message', 'Started')}")
                     
                     # Validate response structure
-                    required_fields = ["message", "steps"]
+                    required_fields = ["message", "steps", "features"]
                     missing_fields = [field for field in required_fields if field not in data]
                     if missing_fields:
                         return {"status": "error", "message": f"Missing fields: {missing_fields}"}
+                    
+                    # Check if video generation is enabled in response
+                    features = data.get("features", {})
+                    if not features.get("video_generation", False):
+                        logger.warning("⚠️ WARNING: Video generation not enabled in full automation!")
+                        logger.warning("This may explain user complaint about video generation not working")
+                    
+                    if not features.get("voice_synthesis", False):
+                        logger.warning("⚠️ WARNING: Voice synthesis not enabled in full automation!")
+                    
+                    steps = data.get("steps", [])
+                    video_step_found = any("видео" in step.lower() or "video" in step.lower() for step in steps)
+                    if not video_step_found:
+                        logger.warning("⚠️ WARNING: No video generation step found in automation steps!")
+                    
+                    logger.info(f"🎯 Automation steps: {steps}")
+                    logger.info(f"🎬 Features enabled: {features}")
                     
                     return {"status": "success", "data": data}
                 else:

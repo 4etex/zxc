@@ -437,8 +437,9 @@ class EkosystemaAPITester:
             return {"status": "error", "message": error_msg}
 
     async def run_all_tests(self) -> Dict:
-        """Run all API tests in logical order"""
+        """Run all API tests in logical order - ENHANCED FOR USER ISSUES"""
         logger.info("🚀 Starting EKOSYSTEMA_FULL Backend API Tests")
+        logger.info("🎯 SPECIAL FOCUS: Testing user-reported issues with video generation and automation")
         logger.info(f"🌐 Testing API at: {self.api_url}")
         
         results = {
@@ -446,7 +447,8 @@ class EkosystemaAPITester:
             "total_tests": 0,
             "passed_tests": 0,
             "failed_tests": 0,
-            "test_details": {}
+            "test_details": {},
+            "critical_issues": []
         }
         
         # Test sequence in logical order
@@ -481,26 +483,78 @@ class EkosystemaAPITester:
             else:
                 results["failed_tests"] += 1
                 results["test_summary"][test_name] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                if test_name in ["API Root", "System Status", "Trends Collection"]:
+                    results["critical_issues"].append(f"{test_name}: {result.get('message', 'Unknown error')}")
         
-        # Run content generation if we have trends
+        # Run content generation (basic) if we have trends
         if trend_ids:
             logger.info(f"\n{'='*50}")
-            logger.info("Running: Content Generation")
+            logger.info("Running: Content Generation (Basic)")
             logger.info(f"{'='*50}")
             
             result = await self.test_content_generation(trend_ids)
-            results["test_details"]["Content Generation"] = result
+            results["test_details"]["Content Generation (Basic)"] = result
             results["total_tests"] += 1
             
             if result["status"] == "success":
                 results["passed_tests"] += 1
-                results["test_summary"]["Content Generation"] = "✅ PASSED"
+                results["test_summary"]["Content Generation (Basic)"] = "✅ PASSED"
                 content_ids = result.get("content_ids", [])
+                
+                # Check for gift-related content issue
+                gift_count = result.get("gift_related_count", 0)
+                total_telegram = result.get("total_telegram_content", 0)
+                if gift_count == 0 and total_telegram > 0:
+                    results["critical_issues"].append("Content Generation: No gift-related content found in Telegram posts")
             else:
                 results["failed_tests"] += 1
-                results["test_summary"]["Content Generation"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                results["test_summary"]["Content Generation (Basic)"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                results["critical_issues"].append(f"Content Generation: {result.get('message', 'Unknown error')}")
         else:
-            results["test_summary"]["Content Generation"] = "⏭️ SKIPPED: No trends available"
+            results["test_summary"]["Content Generation (Basic)"] = "⏭️ SKIPPED: No trends available"
+        
+        # CRITICAL TEST: Content generation WITH video generation
+        if trend_ids:
+            logger.info(f"\n{'='*50}")
+            logger.info("Running: Content Generation WITH Videos (CRITICAL)")
+            logger.info(f"{'='*50}")
+            
+            result = await self.test_video_generation_with_content(trend_ids)
+            results["test_details"]["Content+Video Generation"] = result
+            results["total_tests"] += 1
+            
+            if result["status"] == "success":
+                results["passed_tests"] += 1
+                results["test_summary"]["Content+Video Generation"] = "✅ PASSED"
+                videos_created = result.get("videos_created", 0)
+                if videos_created == 0:
+                    results["critical_issues"].append("Video Generation: No videos created despite generate_videos=True")
+            else:
+                results["failed_tests"] += 1
+                results["test_summary"]["Content+Video Generation"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                results["critical_issues"].append(f"Video Generation: {result.get('message', 'Unknown error')}")
+        else:
+            results["test_summary"]["Content+Video Generation"] = "⏭️ SKIPPED: No trends available"
+        
+        # Test separate video generation endpoint if we have content
+        if content_ids:
+            logger.info(f"\n{'='*50}")
+            logger.info("Running: Separate Video Generation")
+            logger.info(f"{'='*50}")
+            
+            result = await self.test_separate_video_generation(content_ids)
+            results["test_details"]["Separate Video Generation"] = result
+            results["total_tests"] += 1
+            
+            if result["status"] == "success":
+                results["passed_tests"] += 1
+                results["test_summary"]["Separate Video Generation"] = "✅ PASSED"
+            else:
+                results["failed_tests"] += 1
+                results["test_summary"]["Separate Video Generation"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                results["critical_issues"].append(f"Separate Video Generation: {result.get('message', 'Unknown error')}")
+        else:
+            results["test_summary"]["Separate Video Generation"] = "⏭️ SKIPPED: No content available"
         
         # Run Telegram publishing if we have content
         if content_ids:
@@ -518,12 +572,13 @@ class EkosystemaAPITester:
             else:
                 results["failed_tests"] += 1
                 results["test_summary"]["Telegram Publishing"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+                results["critical_issues"].append(f"Telegram Publishing: {result.get('message', 'Unknown error')}")
         else:
             results["test_summary"]["Telegram Publishing"] = "⏭️ SKIPPED: No content available"
         
-        # Run full automation test
+        # CRITICAL TEST: Full automation with videos
         logger.info(f"\n{'='*50}")
-        logger.info("Running: Full Automation")
+        logger.info("Running: Full Automation with Videos (CRITICAL)")
         logger.info(f"{'='*50}")
         
         result = await self.test_full_automation()
@@ -536,6 +591,7 @@ class EkosystemaAPITester:
         else:
             results["failed_tests"] += 1
             results["test_summary"]["Full Automation"] = f"❌ FAILED: {result.get('message', 'Unknown error')}"
+            results["critical_issues"].append(f"Full Automation: {result.get('message', 'Unknown error')}")
         
         return results
 

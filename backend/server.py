@@ -668,7 +668,16 @@ async def full_automation_with_videos(generate_videos: bool = True, monetize: bo
             telegram_content = content_batch.get("telegram", [])
             if telegram_content:
                 logging.info("📤 Публикуем в Telegram...")
-                published = await telegram_publisher.publish_batch(telegram_content, delay_seconds=30)
+                
+                # Убеждаемся что передаем правильные данные
+                content_for_publishing = []
+                for item in telegram_content:
+                    if hasattr(item, 'dict'):
+                        content_for_publishing.append(item.dict())
+                    else:
+                        content_for_publishing.append(item)
+                
+                published = await telegram_publisher.publish_batch(content_for_publishing, delay_seconds=30)
                 
                 if published:
                     publications_data = [post.dict() for post in published]

@@ -403,6 +403,107 @@ async def full_automation_cycle():
     except Exception as e:
         logging.error(f"Ошибка автоматизации: {e}")
 
+async def full_automation_with_videos(generate_videos: bool = True, monetize: bool = True, with_voice: bool = True):
+    """Полный цикл автоматизации с видео и монетизацией"""
+    global trend_collector, content_generator, telegram_publisher, video_generator, monetization_manager
+    
+    try:
+        # Инициализируем сервисы если нужно
+        if not trend_collector:
+            trend_collector = TrendCollector(youtube_api_key=YOUTUBE_API_KEY)
+        if not content_generator:
+            content_generator = ContentGenerator(gemini_api_key=GEMINI_API_KEY)
+        if not telegram_publisher:
+            telegram_publisher = TelegramPublisher(bot_token=TELEGRAM_BOT_TOKEN)
+        if generate_videos and not video_generator:
+            video_generator = EnhancedVideoGenerator()
+        if monetize and not monetization_manager:
+            monetization_manager = MonetizationManager()
+        
+        logging.info("🔍 Начинаем сбор трендов...")
+        trends = await trend_collector.collect_all_trends()
+        
+        if trends:
+            # Сохраняем тренды
+            trends_data = [trend.dict() for trend in trends]
+            await db.trends.insert_many(trends_data)
+            
+            logging.info(f"📊 Собрано {len(trends)} трендов")
+            
+            # Определяем платформы для генерации
+            platforms = ["telegram"]
+            if generate_videos:
+                platforms.extend(["youtube_shorts", "tiktok", "instagram"])
+            
+            # Генерируем контент для топ-3 трендов
+            logging.info("🤖 Генерируем контент...")
+            content_batch = await content_generator.generate_batch_content(trends[:3], platforms)
+            
+            # Добавляем монетизацию если запрошено
+            if monetize and monetization_manager:
+                try:
+                    logging.info("💰 Добавляем монетизацию...")
+                    content_batch = await monetization_manager.optimize_content_monetization(content_batch)
+                    logging.info("✅ Монетизация добавлена")
+                except Exception as e:
+                    logging.error(f"❌ Ошибка добавления монетизации: {e}")
+            
+            # Сохраняем весь контент
+            all_content = []
+            for platform, content_items in content_batch.items():
+                content_data = [item.dict() if hasattr(item, 'dict') else item for item in content_items]
+                if content_data:
+                    await db.content.insert_many(content_data)
+                    all_content.extend(content_data)
+            
+            logging.info(f"📝 Создано {len(all_content)} единиц контента")
+            
+            # Генерируем видео если запрошено
+            if generate_videos and video_generator:
+                try:
+                    logging.info("🎬 Создаём видео с озвучкой...")
+                    total_videos = 0
+                    
+                    for platform, content_items in content_batch.items():
+                        if platform in ["youtube_shorts", "tiktok", "instagram"]:
+                            for content_item in content_items:
+                                try:
+                                    content_dict = content_item.dict() if hasattr(content_item, 'dict') else content_item
+                                    video = await video_generator.create_full_video(
+                                        content_dict, 
+                                        platform, 
+                                        with_voice=with_voice
+                                    )
+                                    # Сохраняем информацию о видео в БД
+                                    video_data = video.to_dict()
+                                    await db.videos.insert_one(video_data)
+                                    total_videos += 1
+                                except Exception as e:
+                                    logging.error(f"❌ Ошибка создания видео для {platform}: {e}")
+                    
+                    logging.info(f"🎥 Создано {total_videos} видео")
+                except Exception as e:
+                    logging.error(f"❌ Ошибка генерации видео: {e}")
+            
+            # Публикуем Telegram контент
+            telegram_content = content_batch.get("telegram", [])
+            if telegram_content:
+                logging.info("📤 Публикуем в Telegram...")
+                published = await telegram_publisher.publish_batch(telegram_content, delay_seconds=30)
+                
+                if published:
+                    publications_data = [post.dict() for post in published]
+                    await db.publications.insert_many(publications_data)
+                    
+                logging.info(f"✅ Автоматизация завершена: {len(published)} публикаций")
+            else:
+                logging.warning("❌ Не удалось сгенерировать Telegram контент")
+        else:
+            logging.warning("❌ Не удалось собрать тренды")
+            
+    except Exception as e:
+        logging.error(f"❌ Ошибка полной автоматизации: {e}")
+
 # Include the router in the main app
 app.include_router(api_router)
 

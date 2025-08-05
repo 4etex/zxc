@@ -58,6 +58,7 @@ class ContentGenerationRequest(BaseModel):
 
 class ContentResponse(BaseModel):
     content: Dict[str, List[Dict]]
+    videos: Optional[Dict[str, List[Dict]]] = None  # Информация о созданных видео
     total_items: int
     timestamp: str
 

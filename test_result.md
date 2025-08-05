@@ -183,15 +183,18 @@ backend:
 frontend:
   - task: "EKOSYSTEMA Dashboard UI"
     implemented: true
-    working: false
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high" 
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: false
         agent: "main"
         comment: "Полнофункциональный React интерфейс с управлением трендами, генерацией контента и публикацией"
+      - working: true
+        agent: "main"
+        comment: "Исправлена передача selectedTrends между компонентами. Добавлен пропс onSelectedTrendsUpdate в TrendsManager для корректной работы выбора трендов в главном приложении."
 
 metadata:
   created_by: "main_agent"

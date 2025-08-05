@@ -683,7 +683,7 @@ async def full_automation_with_videos(generate_videos: bool = True, monetize: bo
                     publications_data = [post.dict() for post in published]
                     await db.publications.insert_many(publications_data)
                     
-                logging.info(f"✅ Автоматизация завершена: {len(published)} публикаций")
+                logging.info(f"✅ Автоматизация с видео завершена: {len(published)} публикаций")
             else:
                 logging.warning("❌ Не удалось сгенерировать Telegram контент")
         else:

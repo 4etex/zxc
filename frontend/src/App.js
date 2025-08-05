@@ -435,7 +435,7 @@ function App() {
               onClick={runFullAutomation}
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition-all"
             >
-              ⚡ Запустить автоматизацию
+              ⚡ Запустить ПОЛНУЮ автоматизацию
             </button>
             
             <button

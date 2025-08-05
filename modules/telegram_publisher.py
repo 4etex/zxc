@@ -88,7 +88,33 @@ class TelegramPublisher:
                 timestamp=datetime.utcnow()
             )
 
-    async def publish_batch(self, content_items: List[ContentItem], channel_key: str = "main", delay_seconds: int = 10) -> List[TelegramPost]:
+    async def publish_batch(self, content_items, channel_key: str = "main", delay_seconds: int = 10) -> List[TelegramPost]:
+        """Пакетная публикация с задержками - работает с dict и ContentItem"""
+        published_posts = []
+        
+        for i, content_item in enumerate(content_items):
+            # Проверяем тип данных и извлекаем информацию
+            if hasattr(content_item, 'dict'):
+                # Это ContentItem объект
+                item_data = content_item
+            elif isinstance(content_item, dict):
+                # Это уже словарь, создаем объект
+                from .content_generator import ContentItem
+                try:
+                    item_data = ContentItem(**content_item)
+                except Exception as e:
+                    self.logger.error(f"Ошибка создания ContentItem: {e}")
+                    self.logger.info(f"Данные контента: {content_item}")
+                    # Создаем минимальный объект для публикации
+                    item_data = self._create_fallback_content_item(content_item)
+            else:
+                self.logger.error(f"Неизвестный тип контента: {type(content_item)}")
+                continue
+            
+            # Публикуем контент
+            post = await self.publish_content(item_data, channel_key)
+            if post:
+                published_posts.append(post)
         """Пакетная публикация с задержками"""
         published_posts = []
         
